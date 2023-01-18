@@ -1,11 +1,5 @@
-# Standard Library
-import sys
-import os
-import tkinter as tk
-from tkinter import *
-from PIL import Image, ImageTk
-import keyboard
-from screeninfo import get_monitors
+# chained imports because it looks clean Fuck you
+from imports import *
 
 class myOverlay:
     """
@@ -14,10 +8,10 @@ class myOverlay:
     """
 
     def __init__(self,
-                update_frequency_ms: int = 5_000, xpos: int = 0, ypos: int = 0,  LST: list = ((0, 0, 0, 0)), path: str = "crossHair.png", ROOT = 0):
+                update_frequency_ms: int = 5_000, xpos: int = 0, ypos: int = 0,  LST: list = ((0, 0, 0, 0)), path: str = "Layer.png", ROOT = 0):
         self.update_frequency_ms = update_frequency_ms
         self.root = Toplevel(ROOT)
-        path = os.getcwd() + "\\images\\" +  path
+        path = os.getcwd() + "\\images\\DontFuckWith\\" +  path
         print(os.getcwd())
         self.defaultImage = Image.open(path)
         self.updating_Image = ImageTk.PhotoImage(self.defaultImage)
@@ -37,35 +31,19 @@ class myOverlay:
         self.root.lift()
         self.root.wm_attributes("-transparentcolor", "white")
         self.root.wm_attributes("-topmost", True)
-
-
-
-    def display(self, myList):
-        screenShot = ImageGrab.grab(myList) #x, y, w, h
-        return screenShot
-
-
-    def update_Image(self) -> None:
-        if keyboard.is_pressed('='):
-            self.updating_Image = ImageTk.PhotoImage(self.defaultImage)
-            self.updating_Image_level.configure(image = self.updating_Image)
-            self.updating_Image_level.image = self.updating_Image
-        elif keyboard.is_pressed('|'):
-            sys.exit()
+        self.root.config(bg='white')
+        self.root.bg = Canvas(self.root, width=100, height=100, bg='white')
 
     def update_label(self) -> None:
-        self.update_Image()        
+        if keyboard.is_pressed('|'):
+            sys.exit()     
         self.root.after(self.update_frequency_ms, self.update_label)
 
 
     def run(self) -> None:
         self.root.after(0, self.update_label)
         self.root.mainloop()
-
-def example_callback():
-    return 1
-    # return str(datetime.now())
-
+# end of myOverlay Class 
 
 def get_monInfo():
     for m in get_monitors():
@@ -92,6 +70,3 @@ def setup(Crosshair_Path: str, root):
         # lst = list((850, 200, 1200, 500))
     overlay = myOverlay(16, xpos, ypos, lst, Crosshair_Path, root)
     overlay.run()
-
-# if __name__ == '__main__':
-#     setup("portal.png")

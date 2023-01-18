@@ -1,32 +1,29 @@
-import tkinter as tk
-import shutil
-import os
-import cv2
-import numpy as np
+# chained imports because it looks clean Fuck you
 from Overlay import *
-from tkinter import ttk
-from tkinter import filedialog as fd
-from tkinter.messagebox import showinfo
-
-from PIL import Image 
-import PIL 
 
 
 src = ""
+currentDirectory = os.getcwd()
 # create the root window
 root = tk.Tk()
 root.title('Tkinter Open File Dialog')
 root.resizable(False, False)
 root.geometry()
 
-currentDirectory = os.getcwd()
+logo = Image.open(currentDirectory + "\\images\\DontFuckWith\\jimin.png")
+photo = ImageTk.PhotoImage(logo)
+root.iconphoto(False, photo)
+
+root.title("Custom Crosshair")
+
+
 
 
 
     
 def select_files():
     filetypes = (
-        ('png', '*.png'),
+        ('Image', '*.png *.jpg'),
         ('All files', '*.*')
     )
 
@@ -36,10 +33,13 @@ def select_files():
         filetypes=filetypes
         )
 
-    global src
-    src = file[0]
-    print("The src is : ", src)
-    combine()
+    if file:
+        global src
+        src = file[0]
+        # print("The src is : ", src)
+        combine()
+    
+    
 
     
 def add_transparent_image(background, foreground, x_offset=None, y_offset=None):
@@ -115,12 +115,12 @@ def combine():
 
 def Done():
     root.withdraw()
-    dst = currentDirectory + "\\images\\Crosshair.png"
+    dst = currentDirectory + "\\images\\DontFuckWith\\Layer.png"
     print("selected File : ", src)
     print("dest : ", dst)
     shutil.copyfile(src, dst)
     print("Tsert")
-    setup("crossHair.png", root)
+    setup("Layer.png", root)
 
 # open button
 open_button = ttk.Button(
