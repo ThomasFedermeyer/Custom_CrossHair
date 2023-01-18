@@ -1,101 +1,152 @@
-# Standard Library
-import sys
 import tkinter as tk
-from PIL import Image, ImageTk
-import keyboard
-from screeninfo import get_monitors
+import shutil
+import os
+import cv2
+import numpy as np
+from Overlay import *
+from tkinter import ttk
+from tkinter import filedialog as fd
+from tkinter.messagebox import showinfo
+
+from PIL import Image 
+import PIL 
 
 
-class Overlay:
-    """
-    Creates an overlay window using tkinter
-    Uses the "-topmost" property to always stay on top of other Windows
-    """
+src = ""
+# create the root window
+root = tk.Tk()
+root.title('Tkinter Open File Dialog')
+root.resizable(False, False)
+root.geometry()
 
-    def __init__(self,
-                update_frequency_ms: int = 5_000, xpos: int = 0, ypos: int = 0,  LST: list = ((0, 0, 0, 0))):
-        self.update_frequency_ms = update_frequency_ms
-        self.root = tk.Tk()
+currentDirectory = os.getcwd()
 
-        self.defaultImage = Image.open(r"C:\Users\tommy\Desktop\Personal projects\OverLayer\Custom_CrossHair\images\portal.png")
-        self.defaultImage2 = Image.open(r"C:\Users\tommy\Desktop\Personal projects\OverLayer\Custom_CrossHair\images\catgun.png")
-        self.updating_Image = ImageTk.PhotoImage(self.defaultImage)
-        self.updating_Image_level = tk.Label(
-            self.root,
-            image=self.updating_Image
+
+
+    
+def select_files():
+    filetypes = (
+        ('png', '*.png'),
+        ('All files', '*.*')
+    )
+
+    file = fd.askopenfilenames(
+        title='Open files',
+        initialdir='Pictures',
+        filetypes=filetypes
         )
-        self.updating_Image_level.place(x = -2, y = -2)
 
-        # Define Window Geometery
-        self.root.overrideredirect(True)
-        self.relativeXpos = int(xpos - self.defaultImage.width/2)
-        self.relativeYpos = int(ypos - self.defaultImage.height/2 -3)
-        self.newPos = str(self.defaultImage.width) + "x" + str(self.defaultImage.height) + "+" + str(self.relativeXpos) + "+" + str(self.relativeYpos)
-        print(self.newPos)
-        self.root.geometry(self.newPos)
-        self.root.lift()
-        self.root.wm_attributes("-transparentcolor", "white")
-        self.root.wm_attributes("-topmost", True)
+    global src
+    src = file[0]
+    print("The src is : ", src)
+    combine()
+
+    
+def add_transparent_image(background, foreground, x_offset=None, y_offset=None):
+    bg_h, bg_w, bg_channels = background.shape
+    fg_h, fg_w, fg_channels = foreground.shape
+
+    assert bg_channels == 3, f'background image should have exactly 3 channels (RGB). found:{bg_channels}'
+    assert fg_channels == 4, f'foreground image should have exactly 4 channels (RGBA). found:{fg_channels}'
+
+    # center by default
+    if x_offset is None: x_offset = (bg_w - fg_w) // 2
+    if y_offset is None: y_offset = (bg_h - fg_h) // 2
+
+    w = min(fg_w, bg_w, fg_w + x_offset, bg_w - x_offset)
+    h = min(fg_h, bg_h, fg_h + y_offset, bg_h - y_offset)
+
+    if w < 1 or h < 1: return
+
+    # clip foreground and background images to the overlapping regions
+    bg_x = max(0, x_offset)
+    bg_y = max(0, y_offset)
+    fg_x = max(0, x_offset * -1)
+    fg_y = max(0, y_offset * -1)
+    foreground = foreground[fg_y:fg_y + h, fg_x:fg_x + w]
+    background_subsection = background[bg_y:bg_y + h, bg_x:bg_x + w]
+
+    # separate alpha and color channels from the foreground image
+    foreground_colors = foreground[:, :, :3]
+    alpha_channel = foreground[:, :, 3] / 255  # 0-255 => 0.0-1.0
+
+    # construct an alpha_mask that matches the image shape
+    alpha_mask = np.dstack((alpha_channel, alpha_channel, alpha_channel))
+
+    # combine the background with the overlay image weighted by alpha
+    composite = background_subsection * (1 - alpha_mask) + foreground_colors * alpha_mask
+
+    # overwrite the section of the background image that has been updated
+    background[bg_y:bg_y + h, bg_x:bg_x + w] = composite
+
+def combine():
+    image1 = Image.open(currentDirectory + "\\images\\DontFuckWith\\NoCrosshair.png") # can just use the base now sice it was already converted
+    image2 = Image.open(src)
+    image1 = image1.convert("RGBA")
+    image2 = image2.convert("RGBA")
+
+    datas = image2.getdata()
+ 
+    newData = []
+ 
+    for item in datas:
+        if item[0] == 255 and item[1] == 255 and item[2] == 255:
+            newData.append((255, 255, 255, 0))
+        else:
+            newData.append(item)
+ 
+    image2.putdata(newData)
+
+    image1 = image1.save(currentDirectory + "\\images\\DontFuckWith\\NoCrosshair.png")
+    image2 = image2.save(currentDirectory+ "\\images\\DontFuckWith\\Layer.png")
+
+    background = cv2.imread(currentDirectory + "\\images\\DontFuckWith\\NoCrosshair.png")
+    overlay = cv2.imread(currentDirectory+ "\\images\\DontFuckWith\\Layer.png", cv2.IMREAD_UNCHANGED)
+
+    add_transparent_image(background, overlay)
+
+    cv2.imwrite(currentDirectory+ "\\images\\DontFuckWith\\example.png", background)
+
+    openimage = Image.open(currentDirectory+ "\\images\\DontFuckWith\\example.png")
+    temp = ImageTk.PhotoImage(openimage)
+    label1.configure(image = temp)
+    label1.image = temp
 
 
+def Done():
+    root.withdraw()
+    dst = currentDirectory + "\\images\\Crosshair.png"
+    print("selected File : ", src)
+    print("dest : ", dst)
+    shutil.copyfile(src, dst)
+    print("Tsert")
+    setup("crossHair.png", root)
 
-    def display(self, myList):
-        screenShot = ImageGrab.grab(myList) #x, y, w, h
-        return screenShot
+# open button
+open_button = ttk.Button(
+    root,
+    text='Open a File',
+    command=select_files
+)
 
+Done_button = ttk.Button(
+    root,
+    text='Done',
+    command=Done
+)
 
-    def update_Image(self) -> None:
-        if keyboard.is_pressed('='):
-            self.updating_Image = ImageTk.PhotoImage(self.defaultImage)
-            self.updating_Image_level.configure(image = self.updating_Image)
-            self.updating_Image_level.image = self.updating_Image
-        elif keyboard.is_pressed('-'):
-            self.updating_Image = ImageTk.PhotoImage(self.defaultImage2)
-            self.updating_Image_level.configure(image = self.updating_Image)
-            self.updating_Image_level.image = self.updating_Image
-        elif keyboard.is_pressed('|'):
-            sys.exit()
+open_button.pack(expand=True)
+Done_button.pack(expand=True)
 
-    def update_label(self) -> None:
-        self.update_Image()        
-        self.root.after(self.update_frequency_ms, self.update_label)
+image1 = Image.open(currentDirectory + "\\images\\DontFuckWith\\NoCrosshair.png")
+test = ImageTk.PhotoImage(image1)
 
-
-    def run(self) -> None:
-        self.root.after(0, self.update_label)
-        self.root.mainloop()
-
-def example_callback():
-    return 1
-    # return str(datetime.now())
-
-
-def get_monInfo():
-    for m in get_monitors():
-        print(m)
-        if ((str(m)[str(m).index('name')+ 13:str(m).index('name')+ 21]) == 'DISPLAY4'):
-            return True
-    return False
+label1 = ttk.Label(
+    root,
+    image=test)
+label1.image = test
+label1.pack(expand=True)
 
 
-def main():
-    lst = list
-    xpos = 0
-    ypos = 0
-    # sets the x,y,width, and height of the screencapture box 
-    if get_monInfo() == True:
-        print("POG")
-        lst = list((457, 255, 610, 665))
-        xpos = 1280
-        ypos = 720
-    else:
-        print("NOT POG ")
-        lst = list((350, 200, 450, 500))
-        xpos = 960
-        ypos = 540
-        # lst = list((850, 200, 1200, 500))
-    overlay = Overlay(16, xpos, ypos, lst)
-    overlay.run()
-
-if __name__ == '__main__':
-    main()
+# run the application
+root.mainloop()
