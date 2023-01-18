@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import sys
 import os
+from os import path
 
 #  Tkinter Shit
 import tkinter as tk
