@@ -45,22 +45,36 @@ class myOverlay:
 # end of myOverlay Class 
 
 def get_monInfo():
+    size = (0,0)
     for m in get_monitors():
-        # print(m)
-        if ((str(m)[str(m).index('name')+ 13:str(m).index('name')+ 21]) == 'DISPLAY4'):
-            return True
-    return False
+        if(str(m).count('is_primary=True') == 1):
+            print(m)
+            # size[0] = str(m)[str(m).index('height')
+            start = str(m).rindex( 'height=' ) + 7
+            end = str(m).rindex( ', width', start )
+            height = int(str(m)[start:end])
+
+            start = str(m).rindex( 'width=' ) + 6
+            end = str(m).rindex( ', height=', start )
+            width = int(str(m)[start:end])
+            size = (height, width)
+            # return s[start:end]
+            # if ((str(m)[str(m).index('name')+ 13:str(m).index('name')+ 21]) == 'DISPLAY4'):
+            #     return True
+    return size
 
 def setup(Crosshair_Path: str, root):
     lst = list
-    xpos = 0
-    ypos = 0
+    size = get_monInfo()
+    print(size)
+    xpos = int(size[1]/2)
+    ypos = int(size[0]/2)
     # sets the x,y,width, and height of the screencapture box 
-    if get_monInfo() == True:
-        xpos = 1280
-        ypos = 720
-    else:
-        xpos = 960
-        ypos = 540
+    # if get_monInfo() == True:
+    #     xpos = 1280
+    #     ypos = 720
+    # else:
+    #     xpos = 960
+    #     ypos = 540
     overlay = myOverlay(16, xpos, ypos, Crosshair_Path, root)
     overlay.run()
